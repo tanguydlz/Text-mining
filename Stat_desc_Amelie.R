@@ -9,11 +9,11 @@ str(data)
 head(data)
 summary(data)
 
-#Première partie d'analyse sur l'inquiétude : 
+#Premiere partie d'analyse sur l'inquietude : 
 
 #Principale Variable: 
 
-#Var Raison sans données manquantes : 161 obs
+#Var Raison sans donnees manquantes : 161 obs
 VarRaison<-data$Raison[data$Raison!=""]
 length(VarRaison)
 #stat desc : 
@@ -23,7 +23,7 @@ vec.lignes<-tolower(vec.lignes)
 #une liste de chaque mot :
 mot<-strsplit(vec.lignes,c(" "))
 vec.mot<-unlist(mot)
-#création du dictionnaire : 
+#creation du dictionnaire : 
 #on garde que les mots uniques
 vec.mot<-unique(vec.mot)
 vec.mot<-sort(vec.mot)
@@ -94,23 +94,23 @@ length(data$Raison[data$Raison!=""])
 
 #Recodage 1er inquiétude en mois :
 #Des la naissance : 0
-data$X1eres.inquiétudes..mois.[str_detect(data$X1eres.inquiétudes..mois.,"naissance")]<-0
-#Recodage années en mois :
-for (i in 1:length(data$X1eres.inquiétudes..mois.)) {
-  if (str_detect(data$X1eres.inquiétudes..mois.[i],"ans")) {
-    data$X1eres.inquiétudes..mois.[i]<-as.numeric(substr(data$X1eres.inquiétudes..mois.[i],1,str_locate(data$X1eres.inquiétudes..mois.[i], " ans")[1]-1))*12
+data$X1eres.inqui�tudes..mois.[str_detect(data$X1eres.inqui�tudes..mois.,"naissance")]<-0
+#Recodage annees en mois :
+for (i in 1:length(data$X1eres.inqui�tudes..mois.)) {
+  if (str_detect(data$X1eres.inqui�tudes..mois.[i],"ans")) {
+    data$X1eres.inqui�tudes..mois.[i]<-as.numeric(substr(data$X1eres.inqui�tudes..mois.[i],1,str_locate(data$X1eres.inqui�tudes..mois.[i], " ans")[1]-1))*12
   }
 }
 
-#Complément 
+#Complement 
 
-#Prendre en compte le diagnostic dans une deuxième partie d'analyse :
+#Prendre en compte le diagnostic dans une deuxieme partie d'analyse :
 
-#Var diagnostic sans données manquantes : 159 obs
+#Var diagnostic sans donnees manquantes : 159 obs
 data$Diagnostic.[data$Diagnostic.!=""]
 length(data$Diagnostic.[data$Diagnostic.!=""])
 
-#Données comportant les enfants qui ont un diagnostic avere d'autisme :
+#Donnees comportant les enfants qui ont un diagnostic avere d'autisme :
 #Les enfants sui ont "TSA" dans leur diagnostic ?
 library(stringr)
 data2<-data[rownames(data)[str_detect(data$Diagnostic., "TSA")],]
