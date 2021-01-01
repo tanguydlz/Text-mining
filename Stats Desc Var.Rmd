@@ -23,7 +23,8 @@ library(wordcloud)
 #df=read.xlsx('C:/Users/DELL/Desktop/Master SISE/Text Mining/BDD_CEDA_dec_2020_complete - ANONYME.xlsx')
 
 setwd("/Users/hoangkhanhle/Desktop/School/Master 2/Text Mining/Projet")
-df <- read_excel("Base_CEDA_nov_2020_anonymisee.xlsx")
+library(xlsx)
+df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
 ```
 
 
@@ -376,6 +377,132 @@ print(sort(freq_q,decreasing=TRUE)[1:10])
 ```{r}
 wordcloud(names(freq_q),freq_q,max.words=25,color="blue")
 ```
+
+
+## -------------------------- TANGUY --------------------------------- ##
+
+
+
+################################################################################################
+################################################################################################
+## ----------------------------- Preoccupation  ------------------------------------------
+################################################################################################
+################################################################################################
+
+
+```{r}
+#source
+preoccupation_source=VectorSource(df$Préoccupations)
+```
+
+
+```{r}
+#corpus
+preoccupation_corpus=VCorpus(preoccupation_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+preoccupation_corpus= tm_map(preoccupation_corpus,content_transformer(tolower))
+#removePunctuation
+preoccupation_corpus = tm_map(preoccupation_corpus,removePunctuation)
+#removeStopWord
+preoccupation_corpus = tm_map(preoccupation_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+preoccupation_corpus = tm_map(preoccupation_corpus,stripWhitespace)
+```
+
+
+```{r}
+preoccupation_matrix=TermDocumentMatrix(preoccupation_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_preoccupation <- as.matrix(preoccupation_matrix)
+print(nrow(M_preoccupation))
+print(ncol(M_preoccupation))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_preoccupation <- apply(M_preoccupation,1,sum)
+
+print(sort(freq_preoccupation,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_preoccupation),freq_preoccupation,max.words=25,color="blue")
+```
+
+################################################################################################
+################################################################################################
+## ----------------------------- Antécédents  ------------------------------------------
+################################################################################################
+################################################################################################
+
+
+```{r}
+library(dplyr)
+#source
+X=df[,21]
+X = recode(X, '0' = "non")
+X[X == ""] = "NC"
+antecedent_source=VectorSource(X)
+```
+
+
+```{r}
+#corpus
+antecedent_corpus=VCorpus(antecedent_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+antecedent_corpus= tm_map(antecedent_corpus,content_transformer(tolower))
+#removePunctuation
+antecedent_corpus = tm_map(antecedent_corpus,removePunctuation)
+#removeStopWord
+antecedent_corpus = tm_map(antecedent_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+antecedent_corpus = tm_map(antecedent_corpus,stripWhitespace)
+```
+
+
+```{r}
+antecedent_matrix=TermDocumentMatrix(antecedent_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_antecedent <- as.matrix(antecedent_matrix)
+print(nrow(M_antecedent))
+print(ncol(M_antecedent))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_antecedent <- apply(M_antecedent,1,sum)
+
+print(sort(freq_antecedent,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_antecedent),freq_antecedent,max.words=25,color="blue")
+```
+
 
 
 ## --------------------AMELIE  -----------------------------------------------
