@@ -36,6 +36,15 @@ BigramTokenizer =function(x){
     unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
 }
 ```
+
+## ------------- Function OnegramTokenizer ---------------
+
+```{r}
+OnegramTokenizer =function(x){
+    unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)
+}
+```
+
 ################################################################################################
 ################################################################################################
 ##------------------------------------- JEUX ET ACTIVITE ---------------------------------------
@@ -521,10 +530,257 @@ str(df)
 ################################################################################################
 ################################################################################################
 
-Valeur manquant 
+
+
+Valeur manquante : 
+
 ```{r}
-#Var Raison sans données manquantes : 161 obs
-df$Raison[df$Raison!=""]
-length(df$Raison[df$Raison!=""])
+#Var Raison sans données manquantes : 177 obs
+VarRaison<-df$Raison[df$Raison!=""]
+length(VarRaison)
 ```
+
+Analyse sur 177 individus :
+
+```{r}
+#source
+raison_source=VectorSource(VarRaison)
+```
+
+
+```{r}
+#corpus
+raison_corpus=VCorpus(raison_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+raison_corpus= tm_map(raison_corpus,content_transformer(tolower))
+#removePunctuation
+raison_corpus = tm_map(raison_corpus,removePunctuation)
+#removeStopWord
+raison_corpus = tm_map(raison_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+raison_corpus = tm_map(raison_corpus,stripWhitespace)
+```
+
+Matrice contenant les termes deux à deux : 
+```{r}
+raison_matrix=TermDocumentMatrix(raison_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+```{r}
+
+#matrice
+M_raison <- as.matrix(raison_matrix)
+print(nrow(M_raison))
+print(ncol(M_raison))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_raison <- apply(M_raison,1,sum)
+
+print(sort(freq_raison,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_raison),freq_raison,max.words=20,color=c("lightblue3","lightblue4","darkcyan"))
+```
+
+
+Matrice contenant terme par terme : 
+```{r}
+raison_matrix2=TermDocumentMatrix(raison_corpus, control = list(tokenize=OnegramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_raison2 <- as.matrix(raison_matrix2)
+print(nrow(M_raison2))
+print(ncol(M_raison2))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_raison2 <- apply(M_raison2,1,sum)
+
+print(sort(freq_raison2,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_raison2),freq_raison2,max.words=20,color=c("lightblue3","lightblue4","darkcyan"))
+```
+Figure : Nuage de mots de la variable "Raison"
+
+Ce nuage de est plus intéressant que celui comparant deux à deux les termes.
+
+Les mots qui ressortent le plus dans cette variable sont "comportement", "language", "retard" "enfants" et "autre", sur un échantillon de 177 individus.
+
+################################################################################################
+################################################################################################
+## ----------------------------- Première Inquiétude  ------------------------------------------
+################################################################################################
+################################################################################################
+
+Recodage 1er inquiétude en mois :
+Nous remplaçons les données en chaine de caratcére, par des nombres pour réaliser une analyse. Pour cela nous remplaçons les chaines contenant le terme "naissance" par 0 pour 0 mois, puis nous multiplions par 12 les nombres précédant le terme "ans". Et pour finir nous transformons la variable en type numéric.
+
+```{r}
+library(stringr)
+#Des la naissance : 0
+df$X1eres.inquiétudes..mois.[str_detect(df$X1eres.inquiétudes..mois.,"naissance")]<-0
+#Recodage années en mois :
+for (i in 1:length(df$X1eres.inquiétudes..mois.)) {
+  if (str_detect(df$X1eres.inquiétudes..mois.[i],"ans")) {
+    df$X1eres.inquiétudes..mois.[i]<-as.numeric(substr(df$X1eres.inquiétudes..mois.[i],1,str_locate(df$X1eres.inquiétudes..mois.[i], " ans")[1]-1))*12
+  }
+}
+#transforme la variable en numéric pour garder que les valeurs numéric
+df$X1eres.inquiétudes..mois.<-as.numeric(df$X1eres.inquiétudes..mois.)
+
+```
+
+
+Comme cette variable est quantitatives, nous allons voir une table des statistiques descriptives, ainsi qu'un boxplot pour la représentation graphique :
+
+```{r}
+summary(df$X1eres.inquiétudes..mois.)
+```
+Table : table statistiques sur la variable quantitative "première inquiétude"
+
+La variable première inquiétude posséde 23 valeurs manquante, donc nous analysons un échantillon de 163 individus. 
+En moyenne c'est à l'age de 31,5 mois que les parents ont leur première inquiétude, et la médiane est de 24 mois. Ce qui signifie que quelques parents ont eu des inquiétudes plus tard et tire à augmenter la moyenne. Nous pouvons remarquer dans notre échantillon que l'age de l'enfant le plus grand est de 168 mois donc 14 ans.
+
+```{r}
+library(ggplot2)
+ggplot(data = df, aes(x = "", y = X1eres.inquiétudes..mois.)) + 
+  geom_boxplot() +
+  ggtitle("Boxplot de l'âge des enfants lors de la première inquiétude des parents") +
+  ylab("Première Inquiétude en mois")
+```
+
+Figure : Boxplot de la variable première inquiétude en mois
+
+Sur un échantillon de 163 individus, nous pouvons voir qu'il existe plusieurs données extremes Mais que la médianes et bien au alentour de 24 mois. 
+
+
+################################################################################################
+################################################################################################
+## ----------------------------- Deuxiéme partie d'analyse à l'aide du diagnostique  ------------------------------------------
+################################################################################################
+################################################################################################
+
+Sujet 2 : "Quels inquiétudes et descriptions cliniques concordent avec un diagnostic avéré d’autisme après évaluation complète sur notre centre.
+
+Nous allons prendre en compte la variable diagnostic dans cette deuxième analyse :
+
+```{r}
+VarDiag<-df$Diagnostic.[df$Diagnostic.!=""]
+length(VarDiag)
+```
+La variable diagnostic posséde 3 valeurs manquantes. Donc nous enleverons ces individus de la suite de l'analyse. Notre nouvel échantillon posséde 183 individus.
+
+Premièrement, nous allons voir les statistiques descriptives de cette variable.
+
+Analyse sur 183 individus :
+
+```{r}
+#source
+diag_source=VectorSource(VarDiag)
+```
+
+
+```{r}
+#corpus
+diag_corpus=VCorpus(diag_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+diag_corpus= tm_map(diag_corpus,content_transformer(tolower))
+#removePunctuation
+diag_corpus = tm_map(diag_corpus,removePunctuation)
+#removeStopWord
+diag_corpus = tm_map(diag_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+diag_corpus = tm_map(diag_corpus,stripWhitespace)
+```
+
+Matrice contenant les termes deux à deux : 
+```{r}
+diag_matrix=TermDocumentMatrix(diag_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+```{r}
+
+#matrice
+M_diag <- as.matrix(diag_matrix)
+print(nrow(M_diag))
+print(ncol(M_diag))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_diag <- apply(M_diag,1,sum)
+
+print(sort(freq_diag,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_diag),freq_diag,max.words=20,color=c("lightblue3","lightblue4","darkcyan"))
+```
+
+Les pairs de mots qui ressortent le plus dans cette variable sont "tsa retard", "retard language", "trouble language" "tsa tdah" et "tsa di", sur un échantillon de 183 individus.
+
+
+Matrice contenant terme par terme : 
+```{r}
+diag_matrix2=TermDocumentMatrix(diag_corpus, control = list(tokenize=OnegramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_diag2 <- as.matrix(diag_matrix2)
+print(nrow(M_diag2))
+print(ncol(M_diag2))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_diag2 <- apply(M_diag2,1,sum)
+
+print(sort(freq_diag2,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_diag2),freq_diag2,max.words=20,color=c("lightblue3","lightblue4","darkcyan"))
+```
+Figure : Nuage de mots de la variable "diagnostic"
+
+Ce nuage de est moins intéressant que celui comparant deux à deux les termes.
+
+
+QUESTION : 
+Comment reconnait-on un diagnostique d'autisme avérer grâce à cette variable ?
+
+Uniquement ceux qui sont diagnostiqué "TSA" ?
+
+
 
