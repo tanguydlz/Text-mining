@@ -1,0 +1,530 @@
+---
+title: "Text_mining"
+author: "Cong Bang Huynh"
+date: "12/26/2020"
+output: word_document
+---
+
+## --------------- CONG BANG ---------------------- ########
+
+## IMPORTER DES DONNEES
+
+```{r}
+library(openxlsx)
+library("readxl")
+library(tm)
+library(ngram)
+library(wordcloud)
+```
+
+```{r}
+
+
+#df=read.xlsx('C:/Users/DELL/Desktop/Master SISE/Text Mining/BDD_CEDA_dec_2020_complete - ANONYME.xlsx')
+
+setwd("/Users/hoangkhanhle/Desktop/School/Master 2/Text Mining/Projet")
+library(xlsx)
+df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
+```
+
+
+
+## ------------- Function BigramTokenizer ---------------
+
+```{r}
+BigramTokenizer =function(x){
+    unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
+}
+```
+################################################################################################
+################################################################################################
+##------------------------------------- JEUX ET ACTIVITE ---------------------------------------
+################################################################################################
+################################################################################################
+
+```{r}
+#source
+activite_source=VectorSource(df$`jeux et activités`)
+```
+
+
+```{r}
+#corpus
+
+activite_corpus=VCorpus(activite_source)
+
+```
+
+
+```{r}
+#minuscule 
+activite_corpus= tm_map(activite_corpus,content_transformer(tolower))
+activite_corpus = tm_map(activite_corpus,removePunctuation)
+activite_corpus = tm_map(activite_corpus,removeWords, stopwords('fr'))
+activite_corpus = tm_map(activite_corpus,stripWhitespace)
+```
+
+```{r}
+activite_matrix=DocumentTermMatrix(activite_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+```{r}
+
+#matrice
+M1 <- as.matrix(activite_matrix)
+print(nrow(M1))
+print(ncol(M1))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq <- apply(M1,2,sum)
+print(sort(freq,decreasing=TRUE)[1:20])
+```
+
+
+```{r}
+findAssocs(activite_matrix, "jouer", 0.1)
+
+```
+
+
+
+
+
+################################################################################################
+################################################################################################
+## ------------------------------------- SOMMEIL -----------------------------------------------
+################################################################################################
+################################################################################################
+
+```{r}
+#source
+s_source=VectorSource(df$Sommeil)
+```
+
+```{r}
+#corpus
+
+s_corpus=VCorpus(s_source)
+
+```
+
+
+```{r}
+#minuscule 
+s_corpus= tm_map(s_corpus,content_transformer(tolower))
+s_corpus = tm_map(s_corpus,removePunctuation)
+s_corpus = tm_map(s_corpus,removeWords, stopwords('fr'))
+s_corpus = tm_map(s_corpus,stripWhitespace)
+```
+
+```{r}
+
+#tokenizer <- function(x){
+#  ngram_asweka(x, min = 2, max = 2)
+#}
+
+#tokenizer <- function(x) {
+#  NGramTokenizer(x, Weka_control(min = 2, max = 2))
+#}
+
+```
+
+
+
+```{r}
+s_matrix=DocumentTermMatrix(s_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+```{r}
+
+#matrice
+M1 <- as.matrix(s_matrix)
+print(nrow(M1))
+print(ncol(M1))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq <- apply(M1,2,sum)
+fre=c(83,freq)
+names(fre)[1]='Non'
+print(sort(fre,decreasing=TRUE)[1:10])
+```
+
+
+
+```{r}
+wordcloud(names(fre),fre,max.words=25,color="blue")
+```
+
+```{r}
+findAssocs(s_matrix,"difficultés dendormissement",0.2)
+```
+
+
+```{r}
+#d1 <- dist(M1,method="euclidian")
+#cah.ward <- hclust(d1,method="ward.D2")
+#plot(cah.ward)
+```
+
+```{r}
+
+##multidimensional scaling
+mds <- cmdscale(d1,eig=T,k=2)
+print(mds)
+
+#proportion de variance expliquée
+prop.var <- cumsum(mds$eig)/sum(mds$eig) * 100
+print(prop.var)
+
+#nuage de points dans le plan factoriel
+plot(mds$points[,1],mds$points[,2],type="n")
+text(mds$points[,1],mds$points[,2],labels=1:7)
+
+```
+
+
+
+
+
+################################################################################################
+################################################################################################
+## ------------------------------- ENTREE EN CONTACT ------------------------------------------
+################################################################################################
+################################################################################################
+
+
+
+
+```{r}
+#source
+#s_source=VectorSource(df$Entrée.en.contact)
+s_source=VectorSource(df$`Entrée en contact`)
+```
+
+```{r}
+#corpus
+
+s_corpus=VCorpus(s_source)
+
+```
+
+
+```{r}
+#minuscule 
+s_corpus= tm_map(s_corpus,content_transformer(tolower))
+s_corpus = tm_map(s_corpus,removePunctuation)
+s_corpus = tm_map(s_corpus,removeWords, stopwords('fr'))
+s_corpus = tm_map(s_corpus,stripWhitespace)
+```
+
+
+```{r}
+s_matrix=TermDocumentMatrix(s_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+```{r}
+
+#matrice
+M1 <- as.matrix(s_matrix)
+print(nrow(M1))
+print(ncol(M1))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq <- apply(M1,1,sum)
+
+print(sort(freq,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq),freq,max.words=25,color="blue")
+```
+
+```{r}
+findAssocs(s_matrix,"difficultés dendormissement",0.2)
+```
+
+
+
+## -------------------------- KHANH --------------------------------- ##
+
+
+
+################################################################################################
+################################################################################################
+## ----------------------------- HABITUDE DE L'ENFANT  ------------------------------------------
+################################################################################################
+################################################################################################
+
+
+```{r}
+#source
+he_source=VectorSource(df$`Habitudes de l'enfant`)
+```
+
+
+```{r}
+#corpus
+he_corpus=VCorpus(he_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+he_corpus= tm_map(he_corpus,content_transformer(tolower))
+#removePunctuation
+he_corpus = tm_map(he_corpus,removePunctuation)
+#removeStopWord
+he_corpus = tm_map(he_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+he_corpus = tm_map(he_corpus,stripWhitespace)
+```
+
+
+```{r}
+he_matrix=TermDocumentMatrix(he_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_he <- as.matrix(he_matrix)
+print(nrow(M_he))
+print(ncol(M_he))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_he <- apply(M_he,1,sum)
+
+print(sort(freq_he,decreasing=TRUE)[1:10])
+```
+
+```{r}
+library(wordcloud)
+```
+
+
+
+```{r}
+wordcloud(names(freq_he),freq_he,max.words=25,color="blue")
+```
+
+
+
+################################################################################################
+################################################################################################
+## ----------------------------- QUI  ------------------------------------------
+################################################################################################
+################################################################################################
+
+```{r}
+#source
+q_source=VectorSource(df$Qui)
+```
+
+
+```{r}
+#corpus
+q_corpus=VCorpus(q_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+q_corpus= tm_map(q_corpus,content_transformer(tolower))
+#removePunctuation
+q_corpus = tm_map(q_corpus,removePunctuation)
+#removeStopWord
+q_corpus = tm_map(q_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+q_corpus = tm_map(q_corpus,stripWhitespace)
+```
+
+```{r}
+q_matrix=TermDocumentMatrix(q_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_q <- as.matrix(q_matrix)
+print(nrow(M_q))
+print(ncol(M_q))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_q <- apply(M_q,1,sum)
+
+print(sort(freq_q,decreasing=TRUE)[1:10])
+```
+```{r}
+wordcloud(names(freq_q),freq_q,max.words=25,color="blue")
+```
+
+
+## -------------------------- TANGUY --------------------------------- ##
+
+
+
+################################################################################################
+################################################################################################
+## ----------------------------- Preoccupation  ------------------------------------------
+################################################################################################
+################################################################################################
+
+
+```{r}
+#source
+preoccupation_source=VectorSource(df$Préoccupations)
+```
+
+
+```{r}
+#corpus
+preoccupation_corpus=VCorpus(preoccupation_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+preoccupation_corpus= tm_map(preoccupation_corpus,content_transformer(tolower))
+#removePunctuation
+preoccupation_corpus = tm_map(preoccupation_corpus,removePunctuation)
+#removeStopWord
+preoccupation_corpus = tm_map(preoccupation_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+preoccupation_corpus = tm_map(preoccupation_corpus,stripWhitespace)
+```
+
+
+```{r}
+preoccupation_matrix=TermDocumentMatrix(preoccupation_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_preoccupation <- as.matrix(preoccupation_matrix)
+print(nrow(M_preoccupation))
+print(ncol(M_preoccupation))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_preoccupation <- apply(M_preoccupation,1,sum)
+
+print(sort(freq_preoccupation,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_preoccupation),freq_preoccupation,max.words=25,color="blue")
+```
+
+################################################################################################
+################################################################################################
+## ----------------------------- Antécédents  ------------------------------------------
+################################################################################################
+################################################################################################
+
+
+```{r}
+library(dplyr)
+#source
+X=df[,21]
+X = recode(X, '0' = "non")
+X[X == ""] = "NC"
+antecedent_source=VectorSource(X)
+```
+
+
+```{r}
+#corpus
+antecedent_corpus=VCorpus(antecedent_source)
+
+```
+
+
+```{r}
+#TransformMinuscule 
+antecedent_corpus= tm_map(antecedent_corpus,content_transformer(tolower))
+#removePunctuation
+antecedent_corpus = tm_map(antecedent_corpus,removePunctuation)
+#removeStopWord
+antecedent_corpus = tm_map(antecedent_corpus,removeWords, stopwords('fr'))
+#removeWhiteSpace
+antecedent_corpus = tm_map(antecedent_corpus,stripWhitespace)
+```
+
+
+```{r}
+antecedent_matrix=TermDocumentMatrix(antecedent_corpus, control = list(tokenize=BigramTokenizer))
+```
+
+
+
+```{r}
+
+#matrice
+M_antecedent <- as.matrix(antecedent_matrix)
+print(nrow(M_antecedent))
+print(ncol(M_antecedent))
+
+#liste des termes
+#print(colnames(M1))
+#fréquence de chaque terme
+freq_antecedent <- apply(M_antecedent,1,sum)
+
+print(sort(freq_antecedent,decreasing=TRUE)[1:10])
+```
+
+
+```{r}
+wordcloud(names(freq_antecedent),freq_antecedent,max.words=25,color="blue")
+```
+
+
+
+## --------------------AMELIE  -----------------------------------------------
+
+
+## ----------------- Vue Global de database ------------------------------
+
+```{r}
+class(df)
+str(df)
+```
+
+################################################################################################
+################################################################################################
+## ----------------------------- RAISON  ------------------------------------------
+################################################################################################
+################################################################################################
+
+Valeur manquant 
+```{r}
+#Var Raison sans données manquantes : 161 obs
+df$Raison[df$Raison!=""]
+length(df$Raison[df$Raison!=""])
+```
+
