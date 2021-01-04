@@ -447,7 +447,7 @@ print(sort(freq_preoccupation,decreasing=TRUE)[1:10])
 
 
 ```{r}
-wordcloud(names(freq_preoccupation),freq_preoccupation,max.words=25,color="blue")
+wordcloud(names(freq_preoccupation),freq_preoccupation,max.words=20,color=c("lightblue3","lightblue4","darkcyan"))
 ```
 
 ################################################################################################
