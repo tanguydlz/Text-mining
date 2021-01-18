@@ -476,7 +476,7 @@ print(sort(freq_preoccupation2,decreasing=TRUE)[1:10])
 ```{r}
 wordcloud(names(freq_preoccupation2),freq_preoccupation2,max.words=20,color=c("lightblue3","lightblue4","darkcyan"))
 ```
-Figure : Nuage de mots de la variable "Raison"
+Figure : Nuage de mots de la variable "Préocupation"
 
 
 ################################################################################################
