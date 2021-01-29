@@ -277,7 +277,7 @@ findAssocs(s_matrix,"difficultés dendormissement",0.2)
 
 ```{r}
 #source
-he_source=VectorSource(df$`Habitudes de l'enfant`)
+he_source=VectorSource(df$Habitudes.de.l.enfant)
 ```
 
 
@@ -297,6 +297,20 @@ he_corpus = tm_map(he_corpus,removePunctuation)
 he_corpus = tm_map(he_corpus,removeWords, stopwords('fr'))
 #removeWhiteSpace
 he_corpus = tm_map(he_corpus,stripWhitespace)
+```
+
+```{r}
+print(table(he_corpus))
+```
+
+
+## ------------- Function BigramTokenizer ---------------
+
+Changer le Bigram -> Unigram donc de 2 à 1 
+```{r}
+BigramTokenizer =function(x){
+    unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)
+}
 ```
 
 
@@ -380,9 +394,11 @@ print(ncol(M_q))
 #print(colnames(M1))
 #fréquence de chaque terme
 freq_q <- apply(M_q,1,sum)
-
-print(sort(freq_q,decreasing=TRUE)[1:10])
+print(sort(freq_q,decreasing=TRUE)
+#print(sort(freq_q,decreasing=TRUE)[1:10])
 ```
+
+
 ```{r}
 wordcloud(names(freq_q),freq_q,max.words=25,color="blue")
 ```
