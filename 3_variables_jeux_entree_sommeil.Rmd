@@ -50,7 +50,7 @@ activite_corpus = tm_map(activite_corpus,stripWhitespace)
 
 ```{r}
 BigramTokenizer =function(x){
-    unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
+    unlist(lapply(ngrams(words(x), 3), paste, collapse = " "), use.names = FALSE)
 }
 ```
 
@@ -90,6 +90,95 @@ findAssocs(activite_matrix, "jouer", 0.1)
 
 
 
+```{r}
+library(topicmodels)
+```
+
+```{r}
+ind=c()
+for (i in 1:183){
+  if (sum(M1[i,])!=0){
+    ind=c(ind,i)
+  }
+}
+```
+
+
+```{r}
+ap_lda <- LDA(activite_matrix[ind,], k = 2)#, control = list(seed = 1234))
+ap_lda
+```
+
+
+```{r}
+library(tidytext)
+
+ap_topics <- tidy(ap_lda, matrix = "beta")
+ap_topics
+```
+
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+ap_top_terms <- ap_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+ap_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+
+
+
+```{r}
+ap_documents <- tidy(ap_lda, matrix = "gamma")
+ap_documents
+```
+
+
+
+```{r}
+head(df,20)
+```
+
+
+
+
+
+```{r}
+ap_top_terms <- ap_documents %>%
+  group_by(topic) %>%
+  top_n(50, gamma) %>%
+  ungroup() %>%
+  arrange(topic, -gamma)
+
+ap_top_terms %>%
+  mutate(term = reorder_within(document, gamma, topic)) %>%
+  ggplot(aes(gamma, document, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+
+
+
+
+
+
+
+
 
 
 
@@ -101,6 +190,7 @@ findAssocs(activite_matrix, "jouer", 0.1)
 #source
 s_source=VectorSource(df$Sommeil)
 ```
+
 
 ```{r}
 #corpus
@@ -141,7 +231,7 @@ library(ngram)
 
 ```{r}
 BigramTokenizer =function(x){
-    unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
+    unlist(lapply(ngrams(words(x), 1), paste, collapse = " "), use.names = FALSE)
 }
 ```
 
@@ -151,7 +241,6 @@ BigramTokenizer =function(x){
 ```{r}
 s_matrix=DocumentTermMatrix(s_corpus, control = list(tokenize=BigramTokenizer))
 ```
-
 
 ```{r}
 
@@ -177,6 +266,126 @@ library(wordcloud)
 ```{r}
 wordcloud(names(fre),fre,max.words=25,color="blue")
 ```
+
+```{r}
+#réalisation d'une AFC
+library(FactoMineR)
+afc <- CA(M1,ncp=2,graph=FALSE)
+
+```
+
+
+
+
+```{r}
+#graphique en rajoutant du bruit pour éviter les chevauchements
+plot(afc$col$coord[,1],afc$col$coord[,2],type="n")
+abline(h=0,v=0)
+text(afc$col$coord[,1],jitter(afc$col$coord[,2],500),labels=rownames(afc$col$coord),col="red",cex=0.75)
+text(afc$row$coord[,1],afc$row$coord[,2],labels=rownames(afc$row$coord),col="blue")
+```
+
+
+
+
+```{r}
+library(topicmodels)
+```
+
+```{r}
+ind=c()
+for (i in 1:183){
+  if (sum(M1[i,])!=0){
+    ind=c(ind,i)
+  }
+}
+```
+
+
+```{r}
+ap_lda <- LDA(s_matrix[ind,], k = 2)#, control = list(seed = 1234))
+ap_lda
+```
+
+
+```{r}
+library(tidytext)
+
+ap_topics <- tidy(ap_lda, matrix = "beta")
+ap_topics
+```
+
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+ap_top_terms <- ap_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+ap_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+```{r}
+ap_documents <- tidy(ap_lda, matrix = "gamma")
+ap_documents
+```
+
+
+```{r}
+ap_top_terms <- ap_documents %>%
+  group_by(topic) %>%
+  top_n(20, gamma) %>%
+  ungroup() %>%
+  arrange(topic, -gamma)
+
+ap_top_terms %>%
+  mutate(term = reorder_within(document, gamma, topic)) %>%
+  ggplot(aes(gamma, document, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ```{r}
 findAssocs(s_matrix,"difficultés dendormissement",0.2)
@@ -266,7 +475,7 @@ library(ngram)
 
 ```{r}
 BigramTokenizer =function(x){
-    unlist(lapply(ngrams(words(x), 3), paste, collapse = " "), use.names = FALSE)
+    unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
 }
 ```
 
@@ -314,6 +523,54 @@ findAssocs(s_matrix,"difficultés dendormissement",0.2)
 
 
 
+
+```{r}
+library(topicmodels)
+```
+
+```{r}
+ind=c()
+for (i in 1:183){
+  if (sum(M1[i,])!=0){
+    ind=c(ind,i)
+  }
+}
+```
+
+
+```{r}
+ap_lda <- LDA(s_matrix[ind,], k = 2)#, control = list(seed = 1234))
+ap_lda
+```
+
+
+```{r}
+library(tidytext)
+
+ap_topics <- tidy(ap_lda, matrix = "beta")
+ap_topics
+```
+
+
+
+
+```{r}
+library(ggplot2)
+library(dplyr)
+
+ap_top_terms <- ap_topics %>%
+  group_by(topic) %>%
+  top_n(10, beta) %>%
+  ungroup() %>%
+  arrange(topic, -beta)
+
+ap_top_terms %>%
+  mutate(term = reorder_within(term, beta, topic)) %>%
+  ggplot(aes(beta, term, fill = factor(topic))) +
+  geom_col(show.legend = FALSE) +
+  facet_wrap(~ topic, scales = "free") +
+  scale_y_reordered()
+```
 
 
 
