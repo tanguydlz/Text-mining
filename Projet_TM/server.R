@@ -5,31 +5,89 @@ setwd("C:/Users/ameli/Desktop/R/TextMining/Text-mining")
 server <- function(input, output) {
     df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
     new_df<-data.frame(df$Préoccupations,df$Motif.de.consult,df$Diagnostic.,df$jeux.et.activités,df$Sommeil,df$Entrée.en.contact,df$Habitudes.de.l.enfant,df$Qui,df$Antécédents,df$X1eres.inquiétudes..mois.)
-    
+    X=new_df[,1:9]
+    colnames(X) = c("preoccupations","motif", "diagnostique", "jeux","sommeil","contact","habitute","qui","antecedents")
+    #donnée sujet 2 :
+    X2=X[!str_detect(X$diagnostique, "pas de TSA") & !str_detect(X$diagnostique, "Pas de TSA") & X$diagnostique!="",]
+    header=0
     
     FEEL_lex <- read_csv2("http://advanse.lirmm.fr/FEEL.csv")
     
-    X=new_df[,1:9]
-    colnames(X) = c("preoccupations","motif", "diagnostique", "jeux","sommeil","contact","habitute","qui","antecedents")
-    text_df <- tibble(line = 1:nrow(X), preoccupation = X[,1], motif=X[,2],diagnostique=X[,3], jeux=X[,4], sommeil=X[,5],contact=X[,6],habitute=X[,7],qui=X[,8],antecedents=X[,9])
+    #Initialisation des variables réactives (df et le titre)
+    text_df <- reactiveValues(data = tibble(line = 1:nrow(X), preoccupation = X[,1], motif=X[,2],diagnostique=X[,3], jeux=X[,4], sommeil=X[,5],contact=X[,6],habitute=X[,7],qui=X[,8],antecedents=X[,9])
+    )
     
-
-    var <- reactive({
-        tidytext = text_df %>% unnest_tokens(word, as.numeric(input$selectVar))
-        test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
-        #Fréquence des mots
-        freq=test_clean_df %>%
-        count(word,sort=T)
+    text_reactive <- reactiveValues(
+      text = "Inquiétude des parents"
+    )
     
+    #evenement lors des clics des boutons pour les sujets
+    observeEvent(input$suj1, {
+      text_df$data <- tibble(line = 1:nrow(X), preoccupation = X[,1], motif=X[,2],diagnostique=X[,3], jeux=X[,4], sommeil=X[,5],contact=X[,6],habitute=X[,7],qui=X[,8],antecedents=X[,9])
+      text_reactive$text="Inquiétude des parents"
     })
     
+    observeEvent(input$suj2, {
+      text_df$data <- tibble(line = 1:nrow(X2), preoccupation = X2[,1], motif=X2[,2],diagnostique=X2[,3], jeux=X2[,4], sommeil=X2[,5],contact=X2[,6],habitute=X2[,7],qui=X2[,8],antecedents=X2[,9])
+      text_reactive$text="Inquiétude et description cliniques des enfants étant diagnostiqué autiste (donnée réduite)"
+    })  
+    
+    #Titre selon le sujet choisi
+    output$sujet<- renderText({
+      text_reactive$text
+    })
+    
+    #
+    #X2$diagnostique
+    
+    #Word plot data
+    var <- reactive({
+      tidytext = text_df$data %>% unnest_tokens(word, as.numeric(input$selectVar))
+      tidytext = tidytext[,-2]
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+      #Fréquence des mots
+      freq=test_clean_df %>%
+        count(word,sort=T)
+      
+    })
+    
+    #Sentiment analysis data
     feel <- reactive({
-        tidytext = text_df %>% unnest_tokens(word, as.numeric(input$selectVar2))
+        tidytext = text_df$data %>% unnest_tokens(word, as.numeric(input$selectVar2))
         test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
         test_feel_df <- inner_join(test_clean_df, FEEL_lex, by = 'word')
     })
     
+    #n-gram visualization data
+    ngram <- reactive ({
+      tidytext <- text_df$data %>% unnest_tokens(bigram, as.numeric(input$selectVar3),token = "ngrams", n = 2)
+      tidytext=tidytext[,-2]
+      
+      bigrams_separated <- tidytext %>%
+        separate(bigram, c("word1", "word2"), sep = " ")
+      
+      bigrams_filtered <- bigrams_separated %>%
+        filter(!word1 %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin')) %>%
+        filter(!word2 %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin')) %>%
+        filter(!is.na(word1)) %>%
+        filter(!is.na(word2))
+      
+      bigram_counts <- bigrams_filtered %>% 
+        count(word1, word2, sort = TRUE)
+    })
     
+    
+    
+    #Corrplot data
+    corr <- reactive ({
+      tidytext = text_df$data %>% unnest_tokens(word, as.numeric(input$selectVar4))
+      tidytext = tidytext[,-2]
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+      word_cors <- test_clean_df %>%
+        group_by(word) %>%
+        filter(n() >= 5) %>%
+        pairwise_cor(word, line, sort = TRUE)
+    })
     
     
 
@@ -45,7 +103,7 @@ server <- function(input, output) {
         })
 
         
-        #wordcloud
+        #wordcloud world plot
         output$wordPlot <- renderWordcloud2({
             freq <- var()
             validate(
@@ -165,6 +223,129 @@ server <- function(input, output) {
                                      max.words = input$max2)
             }
         })
+        
+        output$ngramPlot <- renderPlot({
+          
+          bigram_counts <- ngram()
+          bigram_graph <- bigram_counts %>%
+            filter(n > 1) %>%
+            graph_from_data_frame()
+          
+          set.seed(2017)
+          a <- grid::arrow(type = "closed", length = unit(.15, "inches"))
+          
+          ggraph(bigram_graph, layout = "fr") +
+            geom_edge_link(aes(edge_alpha = n), show.legend = FALSE,
+                           arrow = a, end_cap = circle(.07, 'inches')) +
+            geom_node_point(color = "lightblue", size = 5) +
+            geom_node_text(aes(label = name), vjust = 1, hjust = 1) +
+            theme_void()
+        })
+        
+        output$bigramWordCloud2 <- renderWordcloud2({
+          
+          bigram_counts <- ngram()
+          
+          
+          bigrams_united <- bigram_counts %>%
+            unite(bigram, word1, word2, sep = " ")
+          
+          validate(
+            need(input$max <= nrow(bigrams_united), "Selected size greater than number of elements in data")
+          )
+          new_df <- bigrams_united[1:input$max3,]
+          wordcloud2(new_df, size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+          
+        })
+        
+        output$bigramBarplot <- renderPlot({
+          
+          bigram_counts <- ngram()
+          
+          
+          bigrams_united <- bigram_counts %>%
+            unite(bigram, word1, word2, sep = " ")
+          
+          new_df <- bigrams_united[1:input$numWords3,]
+          
+          ggplot(new_df, aes(x=reorder(bigram, n), y=n, fill = as.factor(bigram))) +
+            geom_bar(stat = "identity", position = "dodge", col= "black") + xlab("Bigram") + ylab("Frequency") +
+            coord_flip() + scale_fill_hue(c = sample(hues, 1)) + guides(fill=FALSE) + ggtitle("Frequency of each Bigram") + 
+            theme(plot.title = element_text(color = "red", size = 12, face = "bold", hjust = 0.5))
+          
+        })
+        
+        #wordcloud generation
+        observeEvent(input$newCloud2, handlerExpr = {
+          output$bigramWordCloud2 <- renderWordcloud2({
+            
+            bigram_counts <- ngram()
+            
+            
+            bigrams_united <- bigram_counts %>%
+              unite(bigram, word1, word2, sep = " ")
+            
+            validate(
+              need(input$max <= nrow(bigrams_united), "Selected size greater than number of elements in data")
+            )
+            new_df <- bigrams_united[1:input$max3,]
+            wordcloud2(new_df, size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+            
+          })
+        })
+        
+        output$corrPlot <- renderPlot({
+          
+          word_cors <- corr()
+          
+          word_cors %>%
+            filter(correlation > input$phiNum) %>%
+            graph_from_data_frame() %>%
+            ggraph(layout = "fr") +
+            geom_edge_link(aes(edge_alpha = correlation), show.legend = FALSE) +
+            geom_node_point(color = "lightblue", size = 5) +
+            geom_node_text(aes(label = name), repel = TRUE) +
+            theme_void()
+          
+          
+        })
+        
+        
+        
+        output$corrTable <- renderTable({
+          
+          word_cors <- corr()
+          
+          as.data.frame(word_cors %>%
+                          filter(correlation > input$phiTable) %>%
+                          filter(item1 == input$word))
+        })
+        
+        observeEvent(input$randomWord, handlerExpr = {
+          word_cors <- corr()
+          ls=unlist(word_cors[,1])
+          ls=unname(ls)
+          word=sample(ls,size=1,replace=F)
+          updateTextInput(session, "word", value=word)
+        })
+        
+        
+        output$corrPlotTable <- renderPlot({
+          
+          word_cors <- corr()
+          
+          word_cors %>%
+            filter(item1 == input$word) %>%
+            group_by(item1) %>%
+            top_n(input$corrNum) %>%
+            ungroup() %>%
+            mutate(item2 = reorder(item2, correlation)) %>%
+            ggplot(aes(item2, correlation, fill=as.factor(item2))) +
+            geom_bar(stat = "identity") +
+            facet_wrap(~ item1, scales = "free") +
+            coord_flip() + guides(fill=FALSE)
+          
+        })
 
 
 
@@ -172,4 +353,4 @@ server <- function(input, output) {
       
         
 
-}
+}#server

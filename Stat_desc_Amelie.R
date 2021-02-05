@@ -16,6 +16,20 @@ Nous allons prendre en compte la variable diagnostic dans cette deuxième analyse
 ```{r}
 VarDiag<-new_df$df.Diagnostic.[new_df$df.Diagnostic.!=""]
 length(VarDiag)
+
+
+
+
+
+
+    
+    
+    
+    
+    
+    
+    
+    
 ```
 La variable diagnostic posséde 3 valeurs manquantes. Donc nous enleverons ces individus de la suite de l'analyse. Notre nouvel échantillon posséde 183 individus.
 
