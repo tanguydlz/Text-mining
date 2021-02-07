@@ -394,7 +394,7 @@ print(ncol(M_q))
 #print(colnames(M1))
 #fréquence de chaque terme
 freq_q <- apply(M_q,1,sum)
-print(sort(freq_q,decreasing=TRUE)
+print(sort(freq_q,decreasing=TRUE))
 #print(sort(freq_q,decreasing=TRUE)[1:10])
 ```
 
@@ -681,6 +681,7 @@ Nous remplaçons les données en chaine de caratcére, par des nombres pour réa
 
 ```{r}
 library(stringr)
+
 #Des la naissance : 0
 df$X1eres.inquiétudes..mois.[str_detect(df$X1eres.inquiétudes..mois.,"naissance")]<-0
 #Recodage années en mois :
@@ -699,7 +700,67 @@ Comme cette variable est quantitatives, nous allons voir une table des statistiq
 
 ```{r}
 summary(df$X1eres.inquiétudes..mois.)
+
+#fonction : 
+wc<-function(X3){
+  test <- tibble(line = 1:nrow(X3), preoccupation = X3[,1], motif=X3[,2],diagnostique=X3[,3], jeux=X3[,4], sommeil=X3[,5],contact=X3[,6],habitute=X3[,7],qui=X3[,8],antecedents=X3[,9],tranche=X3[10])
+tidytext = test %>% unnest_tokens(word, as.numeric(preoccupation))
+tidytext = tidytext[,-2]
+test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+#Fréquence des mots
+freq=test_clean_df %>%
+  count(word,sort=T)
+wordcloud2(freq, color="random-light", size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+}
+
+#nouvelle variable 
+X$tranche<-df$X1eres.inquiétudes..mois.
+
+trfct<-function(age) {
+  tranche<-age
+  if (is.na(age)) {
+    tranche<-""
+  } else if (age<18) {
+    tranche<-"inf18"
+  } else if (age<24) {
+    tranche<-"entre18et24"
+  } else if (age<36) {
+    tranche<-"entre24et36"
+  } else {
+    tranche<-"sup36"
+  }
+}
+
+X$tranche<-unlist(lapply(df$X1eres.inquiétudes..mois., trfct))
+
+X3<-X[X$tranche=="inf18",]
+X4<-X[X$tranche=="entre18et24",]
+X5<-X[X$tranche=="entre24et36",]
+X6<-X[X$tranche=="sup36",]
+wc(X3)
+wc(X4)
+wc(X5)
+wc(X6)
+
+#Diag pas diag pas trop de dif ...: 
+
+X3=X[!str_detect(X$diagnostique, "pas de TSA") & !str_detect(X$diagnostique, "Pas de TSA") & X$diagnostique!="",]
+X4=X[(str_detect(X$diagnostique, "pas de TSA") | str_detect(X$diagnostique, "Pas de TSA")) & X$diagnostique!="",]
+
+wc(X3)
+wc(X4)
+
+#sommeil non / autre 
+
+X3=X[!str_detect(X$sommeil, "non") & !str_detect(X$sommeil, "Non") & X$diagnostique!="",]
+X4=X[(str_detect(X$sommeil, "non") | str_detect(X$sommeil, "Non")) & X$diagnostique!="",]
+
+wc(X3)
+wc(X4)
+
+
 ```
+
 Table : table statistiques sur la variable quantitative "première inquiétude"
 
 La variable première inquiétude posséde 23 valeurs manquante, donc nous analysons un échantillon de 163 individus. 
