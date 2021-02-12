@@ -68,6 +68,89 @@ server <- function(input, output) {
         test_feel_df <- inner_join(test_clean_df, FEEL_lex, by = 'word')
     })
     
+    
+    #Sentiment analysis data
+    feel <- reactive({
+      tidytext = text_df$data %>% unnest_tokens(word, as.numeric(input$selectVar2))
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+      test_feel_df <- inner_join(test_clean_df, FEEL_lex, by = 'word')
+    })
+    
+    #Radar Emotion
+    emotion_score <- reactive({
+      progress <- shiny::Progress$new()
+      progress$set(message="Radar Emotion", value = 0.4)
+      on.exit(progress$close())
+      
+      tidytext = text_df$data %>% unnest_tokens(word, as.numeric(input$selectVar2))
+      tidytext = tidytext[,-2]
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+      
+      progress$set(value = 0.6, detail = paste("Chercher l'emotion pour chaque mot ..."))
+      nrc<- get_nrc_sentiment(test_clean_df$word,language="french", lowercase=TRUE)
+      
+      progress$set(value = 0.6, detail = paste("Calculer le total de chaque emotion.."))
+      test_feel_df1<-as.data.frame(t(colSums(nrc[,1:8])))
+      test_feel_df1 <- rbind(rep(max(test_feel_df1),8) , rep(0,8) , test_feel_df1)
+      colnames(test_feel_df1)<-c("colère","anticipation","dégoût","peur","joie","tristesse","surprise","confiance")
+      
+      progress$set(value = 0.8, detail = paste("Sortir le résultat.."))
+      test_feel_df1
+    })
+    
+    afinn<-read.delim("/Users/hoangkhanhle/Desktop/School/Master 2/Text Mining/Projet/Khanh/AFINN.txt",header=0)
+    colnames(afinn)<-c("word","score")
+    
+    afinn_score <- reactive({
+      progress <- shiny::Progress$new()
+      progress$set(message="AFINN score", value = 0.4)
+      on.exit(progress$close())
+      
+      tidytext = text_df$data %>% unnest_tokens(word, as.numeric(input$selectVar2))
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+      progress$set(value = 0.8, detail = paste("Calculer le score pour chaque mot..."))
+      
+      afinn_df <- inner_join(test_clean_df, afinn, by = 'word')
+    })
+    
+    
+    output$radar <- renderPlot({
+      
+      if(input$radioSentiment==1){
+        
+        afinn_df <- afinn_score()
+        #Compte le nombre d'occurence et son sentiment (négatif ou positif)
+        occur_sentiment = afinn_df %>%
+          count(word,score,sort=TRUE)
+        
+        occur_sentiment%>%
+          mutate(contribution = n * score) %>%
+          arrange(desc(abs(contribution))) %>%
+          head(input$numWords2) %>%
+          mutate(word = reorder(word, contribution)) %>%
+          ggplot(aes(word, contribution, fill = contribution > 0)) +
+          geom_col(show.legend = FALSE) +
+          xlab("Les n mots les plus contributifs au sentiment") +
+          ylab("Sentiment score * nombre d'occurrences")+
+          coord_flip()
+      }
+      else if (input$radioSentiment==2){
+        
+        test_feel_df1 <- emotion_score()
+        radarchart( test_feel_df1  , axistype=1 , 
+                    
+                    #custom polygon
+                    pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+                    
+                    #custom the grid
+                    cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,300,50), cglwd=0.8,
+                    
+                    #custom labels
+                    vlcex=0.8 
+        )}
+      
+    })
+    
     #n-gram visualization data
     ngram <- reactive ({
       tidytext <- text_df$data %>% unnest_tokens(bigram, as.numeric(input$selectVar3),token = "ngrams", n = 2)

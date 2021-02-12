@@ -14,6 +14,10 @@ library(ggraph)
 library(widyr)
 library(shiny)
 library(stringr)
+library(shinydashboard)
+library(shinyWidgets)
+library(syuzhet)
+library(fmsb)
 
 ui <- shinyUI(
         
@@ -106,7 +110,8 @@ ui <- shinyUI(
                              #conditional main panel
                              mainPanel(
                                  plotOutput("sentiment"),
-                                 plotOutput("wordCloudSentiment")
+                                 plotOutput("wordCloudSentiment"),
+                                 plotOutput("radar")
                              )#mainPanel
                          )#tabPanel(onglet)
                     ,
