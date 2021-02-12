@@ -1,7 +1,7 @@
 
 #setwd("D:/Téléchargements/M2/Text mining")
-setwd("C:/Users/ameli/Desktop/R/TextMining/Text-mining")
-
+#setwd("C:/Users/ameli/Desktop/R/TextMining/Text-mining")
+setwd("/Users/hoangkhanhle/Desktop/School/Master 2/Text Mining/Projet")
 server <- function(input, output) {
     df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
     new_df<-data.frame(df$Préoccupations,df$Motif.de.consult,df$Diagnostic.,df$jeux.et.activités,df$Sommeil,df$Entrée.en.contact,df$Habitudes.de.l.enfant,df$Qui,df$Antécédents,df$X1eres.inquiétudes..mois.)

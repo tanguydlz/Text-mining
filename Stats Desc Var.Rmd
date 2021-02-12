@@ -149,19 +149,30 @@ s_matrix=DocumentTermMatrix(s_corpus, control = list(tokenize=BigramTokenizer))
 
 
 ```{r}
-
 #matrice
 M1 <- as.matrix(s_matrix)
 print(nrow(M1))
 print(ncol(M1))
 
 #liste des termes
+```
+
+
+
+```{r}
 #print(colnames(M1))
 #fréquence de chaque terme
 freq <- apply(M1,2,sum)
 fre=c(83,freq)
 names(fre)[1]='Non'
 print(sort(fre,decreasing=TRUE)[1:10])
+```
+
+
+
+```{r}
+freqx <- apply(M1,2,sum)
+freqx
 ```
 
 
