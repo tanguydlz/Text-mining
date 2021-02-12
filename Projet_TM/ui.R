@@ -189,7 +189,57 @@ ui <- shinyUI(
                                      column(6,tableOutput("corrTable")),
                                      column(6,plotOutput("corrPlotTable")))   
                              )#mainPanel
-                    )#tabPanel(onglet)
+                    ),#tabPanel(onglet)
+                    tabPanel(title="Comparaison" ,
+                             
+                             #loading message
+                             sidebarPanel(
+                               tags$head(tags$style(type="text/css", "
+                                 #loadmessage {
+                                   position: fixed;
+                                   top: 0px;
+                                   left: 0px;
+                                   width: 100%;
+                                   padding: 5px 0px 5px 0px;
+                                   text-align: center;
+                                   font-weight: bold;
+                                   font-size: 100%;
+                                   color: #000000;
+                                   background-color: #CCFF66;
+                                   z-index: 105;
+                                 } ")),
+                               
+                               #side panel 1
+                               helpText("Ici, il est possible d'analyser les mots les plus féquents concernant les variables en lien avec l'inquiétude des parents :"),
+                               hr(),
+                               #varSelectInput("variable", "Variable:", text_df),
+                               selectInput("selectVar5", label = h3("Text variable to select"),
+                                           choices = list("Preoccupation" = 2, "Motif de consultation" = 3),
+                                           selected = 2),
+                               selectInput("selectVar6", label = h3("Cutting variable to select"),
+                                           choices = list("Age de l'enfants lors des 1ère inquiétude" = 2, "Sexe" = 7, "Place dans la fraterie"=4, "Age premier pas"=3, "Sommeil"=6, "Age premier mots"=5, "Diagnostique"=8),
+                                           selected = 2),
+                               sliderInput("max4",
+                                           "Size of wordcloud:",
+                                           min = 5,  max = 100, value = 50, step = 5),
+                               actionButton("newCloud", "Generate new wordcloud")
+                             ), #sidebar
+                             
+                             mainPanel(
+                              tags$h4("Découpage des données selon les modalités : "),
+                              tabsetPanel(
+                                 tabPanel(textOutput("mod1"),wordcloud2Output("comp")),
+                                 tabPanel(textOutput("mod2"),wordcloud2Output("comp2")),
+                                 tabPanel(textOutput("mod3"),wordcloud2Output("comp3")),
+                                 tabPanel(textOutput("mod4"),wordcloud2Output("comp4"))
+                                 
+                              )
+                               
+                             )
+                             
+                          
+                             
+                    )
             )
     )#navbar
 )#Fin

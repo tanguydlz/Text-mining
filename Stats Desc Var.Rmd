@@ -714,6 +714,8 @@ wordcloud2(freq, color="random-light", size = .3, shuffle=T, rotateRatio = sampl
 }
 
 #nouvelle variable 
+#marche bien
+#motif : marche un peu
 X$tranche<-df$X1eres.inquiétudes..mois.
 
 trfct<-function(age) {
@@ -743,6 +745,8 @@ wc(X5)
 wc(X6)
 
 #Diag pas diag pas trop de dif ...: 
+#motif : change un peu ! 
+
 
 X3=X[!str_detect(X$diagnostique, "pas de TSA") & !str_detect(X$diagnostique, "Pas de TSA") & X$diagnostique!="",]
 X4=X[(str_detect(X$diagnostique, "pas de TSA") | str_detect(X$diagnostique, "Pas de TSA")) & X$diagnostique!="",]
@@ -750,15 +754,136 @@ X4=X[(str_detect(X$diagnostique, "pas de TSA") | str_detect(X$diagnostique, "Pas
 wc(X3)
 wc(X4)
 
-#sommeil non / autre 
+#sexe même chose
 
-X3=X[!str_detect(X$sommeil, "non") & !str_detect(X$sommeil, "Non") & X$diagnostique!="",]
-X4=X[(str_detect(X$sommeil, "non") | str_detect(X$sommeil, "Non")) & X$diagnostique!="",]
+trfct6<-function(sex) {
+  tranche<-sex
+  if (is.na(sex)) {
+    tranche<-""
+  } else if (df$Sexe=="M") {
+    tranche<-"oui"
+  } else {
+    tranche<-"non"
+  }
+}
+
+X$sex<-unlist(lapply(as.numeric(df$Sexe), trfct6))
+
+X3=df[df$Sexe=="M",]
+X4=df[df$Sexe=="F",]
 
 wc(X3)
 wc(X4)
 
+#fraterie : 
 
+frat=as.numeric(df$Fratrie..total.avec.l.enfant.)
+
+summary(frat)
+
+#change rien ...
+#motif change
+
+frat2=as.numeric(df$Place.dans.la.fratrie)
+
+summary(frat2)
+
+
+trfct2<-function(frat) {
+  tranche<-frat
+  if (is.na(frat)) {
+    tranche<-""
+  } else if (frat==1) {
+    tranche<-"un"
+  } else {
+    tranche<-"plus"
+  }
+}
+
+X$frat<-unlist(lapply(as.numeric(df$Place.dans.la.fratrie), trfct2))
+
+X3=X[X$frat=="un",]
+X4=X[X$frat=="plus",]
+
+wc(X3)
+wc(X4)
+
+#marche mois : rien
+#motif marche bien
+
+summary(as.numeric(df$Marche..mois.))
+
+trfct3<-function(mar) {
+  tranche<-mar
+  if (is.na(mar)) {
+    tranche<-""
+  } else if (mar<=12.75) {
+    tranche<-"petit"
+  } else {
+    tranche<-"grand"
+  }
+}
+
+X$mar<-unlist(lapply(as.numeric(df$Marche..mois.), trfct3))
+
+X3=X[X$mar=="petit",]
+X4=X[X$mar=="grand",]
+
+wc(X3)
+wc(X4)
+
+#sommeil
+
+
+trfct5<-function(som) {
+  tranche<-som
+  if (is.na(som)) {
+    tranche<-""
+  } else if (!str_detect(som, "non") & !str_detect(som, "Non")) {
+    tranche<-"oui"
+  } else {
+    tranche<-"non"
+  }
+}
+
+X$som<-unlist(lapply(as.numeric(X$sommeil), trfct5))
+
+X3=X[!str_detect(X$sommeil, "non") & !str_detect(X$sommeil, "Non") & X$sommeil!="",]
+X4=X[(str_detect(X$sommeil, "non") | str_detect(X$sommeil, "Non")) & X$sommeil!="",]
+
+wc(X3)
+wc(X4)
+
+#premier mot
+
+summary(as.numeric(df$X1ers.mots))
+
+trfct4<-function(mot) {
+  tranche<-mot
+  if (is.na(mot)) {
+    tranche<-""
+  } else if (mot<=12) {
+    tranche<-"inf12"
+  } else if (mot<=16) {
+    tranche<-"entre12et16"
+  } else if (mot<=24) {
+    tranche<-"entre16et24"
+  } else {
+    tranche<-"sup24"
+  }
+}
+
+X$mot<-unlist(lapply(as.numeric(df$X1ers.mots), trfct4))
+
+X3=X[X$mot=="inf12",]
+X4=X[X$mot=="entre12et16",]
+X5=X[X$mot=="entre16et24",]
+X6=X[X$mot=="sup24",]
+
+wc(X3)
+wc(X4)
+wc(X5)
+wc(X6)
 ```
 
 Table : table statistiques sur la variable quantitative "première inquiétude"

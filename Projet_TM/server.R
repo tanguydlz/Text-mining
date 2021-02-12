@@ -4,9 +4,12 @@ setwd("C:/Users/ameli/Desktop/R/TextMining/Text-mining")
 
 server <- function(input, output) {
     df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
-    new_df<-data.frame(df$Préoccupations,df$Motif.de.consult,df$Diagnostic.,df$jeux.et.activités,df$Sommeil,df$Entrée.en.contact,df$Habitudes.de.l.enfant,df$Qui,df$Antécédents,df$X1eres.inquiétudes..mois.)
-    X=new_df[,1:9]
-    colnames(X) = c("preoccupations","motif", "diagnostique", "jeux","sommeil","contact","habitute","qui","antecedents")
+    new_df<-data.frame(df$Préoccupations,df$Motif.de.consult,df$Diagnostic.,df$jeux.et.activités,df$Sommeil,
+                       df$Entrée.en.contact,df$Habitudes.de.l.enfant,df$Qui,df$Antécédents,df$X1eres.inquiétudes..mois.,
+                       df$Marche..mois., df$Place.dans.la.fratrie,df$X1ers.mots, df$Sexe)
+    X=new_df[,1:14]
+    colnames(X) = c("preoccupations","motif", "diagnostique", "jeux","sommeil","contact","habitute","qui","antecedents",
+                    "preminq", "marche", "fraterie", "mot","sexe")
     #donnée sujet 2 :
     X2=X[!str_detect(X$diagnostique, "pas de TSA") & !str_detect(X$diagnostique, "Pas de TSA") & X$diagnostique!="",]
     header=0
@@ -21,15 +24,21 @@ server <- function(input, output) {
       text = "Inquiétude des parents"
     )
     
+    X3 <- reactiveValues(
+      data = X
+    )
+    
     #evenement lors des clics des boutons pour les sujets
     observeEvent(input$suj1, {
       text_df$data <- tibble(line = 1:nrow(X), preoccupation = X[,1], motif=X[,2],diagnostique=X[,3], jeux=X[,4], sommeil=X[,5],contact=X[,6],habitute=X[,7],qui=X[,8],antecedents=X[,9])
       text_reactive$text="Inquiétude des parents"
+      X3$data=X
     })
     
     observeEvent(input$suj2, {
       text_df$data <- tibble(line = 1:nrow(X2), preoccupation = X2[,1], motif=X2[,2],diagnostique=X2[,3], jeux=X2[,4], sommeil=X2[,5],contact=X2[,6],habitute=X2[,7],qui=X2[,8],antecedents=X2[,9])
       text_reactive$text="Inquiétude et description cliniques des enfants étant diagnostiqué autiste (donnée réduite)"
+      X3$data=X2
     })  
     
     #Titre selon le sujet choisi
@@ -89,9 +98,204 @@ server <- function(input, output) {
         pairwise_cor(word, line, sort = TRUE)
     })
     
+    #Comparaison
+    #fonction 
     
+    trfct<-function(age) {
+      tranche<-age
+      if (is.na(age)) {
+        tranche<-""
+      } else if (age<18) {
+        tranche<-"inf18"
+      } else if (age<24) {
+        tranche<-"entre18et24"
+      } else if (age<36) {
+        tranche<-"entre24et36"
+      } else {
+        tranche<-"sup36"
+      }
+    }
+    
+    trfct2<-function(frat) {
+      tranche<-frat
+      if (is.na(frat)) {
+        tranche<-""
+      } else if (frat==1) {
+        tranche<-"un"
+      } else {
+        tranche<-"plus"
+      }
+    }
+    
+    trfct3<-function(mar) {
+      tranche<-mar
+      if (is.na(mar)) {
+        tranche<-""
+      } else if (mar<=12.75) {
+        tranche<-"petit"
+      } else {
+        tranche<-"grand"
+      }
+    }
+    
+    trfct4<-function(mot) {
+      tranche<-mot
+      if (is.na(mot)) {
+        tranche<-""
+      } else if (mot<=12) {
+        tranche<-"inf12"
+      } else if (mot<=16) {
+        tranche<-"entre12et16"
+      } else if (mot<=24) {
+        tranche<-"entre16et24"
+      } else {
+        tranche<-"sup24"
+      }
+    }
+    
+    trfct5<-function(som) {
+      tranche<-som
+      if (is.na(som)) {
+        tranche<-""
+      } else if (!str_detect(som, "non") & !str_detect(som, "Non")) {
+        tranche<-"oui"
+      } else {
+        tranche<-"non"
+      }
+    }
+    
+    trfct6<-function(dia) {
+      tranche<-dia
+      if (is.na(dia)) {
+        tranche<-""
+      } else if (!str_detect(dia, "pas de TSA") & !str_detect(dia, "Pas de TSA")) {
+        tranche<-"TSA"
+      } else {
+        tranche<-"Pas de TSA"
+      }
+    }
+    
+    wc<-function(X3,vartext){
+      test <- tibble(line = 1:nrow(X3), preoccupation = X3[,1], motif=X3[,2])
+      if (vartext=="2") {
+        tidytext = test %>% unnest_tokens(word, as.numeric(preoccupation))
+      } else {
+        tidytext = test %>% unnest_tokens(word, as.numeric(motif))
+      }
+      tidytext = tidytext[,-2]
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','très','d\'un','qu\'il','nc','avoir','afin'))
+      #Fréquence des mots
+      freq=test_clean_df %>%
+        count(word,sort=T)
+    }
+    
+    compdata<-reactive({
+      comp<-X3$data
+      comp$tranche<-unlist(lapply(comp$preminq, trfct))
+      comp$mar<-unlist(lapply(as.numeric(comp$marche), trfct3))
+      comp$frat<-unlist(lapply(as.numeric(comp$fraterie), trfct2))
+      comp$mots<-unlist(lapply(as.numeric(comp$mot), trfct4))
+      comp$som<-unlist(lapply(comp$sommeil, trfct5))
+      comp$sex<-comp$sexe
+      comp$dia<-unlist(lapply(comp$diagnostique, trfct6))
+      comp
+    })
+    
+    mod<-reactive({
+      if (input$selectVar6=="2") {
+        mod=c("inf18","entre18et24","entre24et36","sup36")
+      } else if (input$selectVar6=="4") {
+        mod=c("un","plus")
+      } else if (input$selectVar6=="3") {
+        mod=c("petit","grand")
+      } else if (input$selectVar6=="5") {
+        mod=c("inf12","entre12et16","entre16et24","sup24")
+      } else if (input$selectVar6=="6") {
+        mod=c("oui","non")
+      } else if (input$selectVar6=="7") {
+        mod=c("F","M")
+      } else if (input$selectVar6=="8") {
+        mod=c("TSA","Pas de TSA")
+      }
+      
+      mod
+    })
+    
+    #A faire: sujet 2
+    
+    compfct<- reactive({
+      mod<-mod()
+      comp<-compdata()
+      tranche1<-comp[comp[,(as.numeric(input$selectVar6)+13)]==mod[1],]
+      graph1<-wc(tranche1,input$selectVar5)
+    })
+    
+    compfct2<- reactive({
+      mod<-mod()
+      comp<-compdata()
+      tranche2<-comp[comp[,(as.numeric(input$selectVar6)+13)]==mod[2],]
+      graph2<-wc(tranche2,input$selectVar5)
+    })
+    
+    compfct3<- reactive({
+      mod<-mod()
+      comp<-compdata()
+      tranche3<-comp[comp[,(as.numeric(input$selectVar6)+13)]==mod[3],]
+      graph3<-wc(tranche3,input$selectVar5)
+    })
+    
+    compfct4<- reactive({
+      mod<-mod()
+      comp<-compdata()
+      tranche4<-comp[comp[,(as.numeric(input$selectVar6)+13)]==mod[4],]
+      graph4<-wc(tranche4,input$selectVar5)
+    })
 
     hues <- c(60:330)
+    
+    output$mod1 <- renderText({
+      res=mod()
+      res[1]
+    })
+    
+    output$mod2 <- renderText({
+      res=mod()
+      res[2]
+    })
+    
+    output$mod3 <- renderText({
+      res=mod()
+      res[3]
+    })
+    
+    output$mod4 <- renderText({
+      res=mod()
+      res[4]
+    })
+    
+    output$comp<- renderWordcloud2({
+      freq<-compfct()
+      new_df <- freq[1:input$max4,]
+      wordcloud2(new_df, color="random-light", size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+    })
+    
+    output$comp2<- renderWordcloud2({
+      freq<-compfct2()
+      new_df <- freq[1:input$max4,]
+      wordcloud2(new_df, color="random-light", size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+    })
+    
+    output$comp3<- renderWordcloud2({
+      freq<-compfct3()
+      new_df <- freq[1:input$max4,]
+      wordcloud2(new_df, color="random-light", size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+    })
+    
+    output$comp4<- renderWordcloud2({
+      freq<-compfct4()
+      new_df <- freq[1:input$max4,]
+      wordcloud2(new_df, color="random-light", size = .3, shuffle=T, rotateRatio = sample(c(1:100) / 100))
+    })
     
         #word frequency barplot
         output$freqPlot <- renderPlot({
