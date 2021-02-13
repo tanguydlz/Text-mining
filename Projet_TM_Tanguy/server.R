@@ -346,6 +346,53 @@ server <- function(input, output, session) {
                                      max.words = input$max2)
             }
         })
+        
+        output$radarChartSentiment <- renderPlot({
+          if(input$radioSentiment==2){
+            test_feel_df <- feel()
+            par(mar = rep(0, 4))
+            
+            test_feel_df = as.data.frame(test_feel_df)
+            test_feel_df[,11] = NA
+            for(i in 1:nrow(test_feel_df)){
+              for(j in 5:10){
+                if (test_feel_df[i,j]==1){
+                  test_feel_df[i,11] = colnames(test_feel_df)[j]
+                }
+              }
+            }
+            
+            
+            colnames(test_feel_df)[11]="sentiment"
+            test_feel_df2 = test_feel_df %>%
+              count(word, sentiment, sort = TRUE) %>%
+              filter(!is.na(sentiment)) %>% select(sentiment,n)
+            test_feel_df2 = aggregate(test_feel_df2$n, list(test_feel_df2$sentiment), FUN="sum")
+            test_feel_df2 = t(test_feel_df2)
+            colnames(test_feel_df2) = test_feel_df2[1,]
+            test_feel_df2[1,] = as.numeric(max(test_feel_df2[2,])) + 5
+            test_feel_df2 = rbind(test_feel_df2,test_feel_df2[2,])
+            test_feel_df2[2,] = 0
+            test_feel_df2 = apply(test_feel_df2,2, as.numeric)
+            test_feel_df2 = as.data.frame(test_feel_df2)
+            
+            radarchart(test_feel_df2  , axistype=1 , 
+                        
+                       #custom polygon
+                       pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+                       
+                       #custom the grid
+                       cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,max(test_feel_df2[,3]),20), cglwd=0.8,
+                       
+                       #custom labels
+                       vlcex=0.8 
+            )
+          }
+        })
+        
+        
+        
+        
       
         ###Bigram Visualization
         #ggraph
