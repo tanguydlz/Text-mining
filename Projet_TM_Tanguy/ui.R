@@ -207,10 +207,8 @@ ui <- fluidPage(
                         # Nombre d'observation 
                         valueBoxOutput("progressBox"),
                         # Proportion des patients TSA 
-                        valueBoxOutput("approvalBox"),
-                        valueBox(
-                            uiOutput("orderNum"), "Nombre de mots ", icon = icon("book"),width=4,color = "green"
-                        )
+                        valueBoxOutput("approvalBox")
+                        
                     ))
             )
             ,

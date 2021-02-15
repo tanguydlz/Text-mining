@@ -100,12 +100,7 @@ server <- function(input, output, session) {
       )
     })
     
-    
-    output$orderNum <- renderUI({
-      freq <- var()
-      prettyNum(count(freq), big.mark=",")
-    })
-    
+
     #Sentiment analysis data
     feel <- reactive({
         text_df <- suj()
