@@ -76,7 +76,12 @@ server <- function(input, output, session) {
     #Value box nombre de mots
     
     output$approvalBox <- renderValueBox({
-      y<- round((nrow(X2)/nrow(X))*100,2)
+      if(input$sujet == 1){
+        a = nrow(X)
+      } else if(input$sujet== 2){
+        a = nrow(X2)
+      }
+      y<- round((nrow(X2)/a)*100,2)
       valueBox(
         y, "% diagnotisé TSA", icon = icon("stethoscope"),
         color = "yellow"
@@ -84,8 +89,13 @@ server <- function(input, output, session) {
     })
     
     output$progressBox <- renderValueBox({
+      if(input$sujet == 1){
+        a = nrow(X)
+      } else if(input$sujet== 2){
+        a = nrow(X2)
+      }
       valueBox(
-        paste0(nrow(X)), "Observations", icon = icon("list"),
+        paste0(a), "Observations", icon = icon("list"),
         color = "purple"
       )
     })
