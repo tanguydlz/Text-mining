@@ -1,6 +1,6 @@
 
-    setwd("D:/Téléchargements/M2/Text mining")
-
+    #setwd("D:/Téléchargements/M2/Text mining")
+setwd("/Users/hoangkhanhle/Desktop/School/Master 2/Text Mining/Projet/Projet_TM_Tanguy")
 
 server <- function(input, output, session) {
     df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
@@ -73,6 +73,29 @@ server <- function(input, output, session) {
     
     })
     
+    #Value box nombre de mots
+    
+    output$approvalBox <- renderValueBox({
+      y<- round((nrow(X2)/nrow(X))*100,2)
+      valueBox(
+        y, "% diagnotisé TSA", icon = icon("stethoscope"),
+        color = "yellow"
+      )
+    })
+    
+    output$progressBox <- renderValueBox({
+      valueBox(
+        paste0(nrow(X)), "Observations", icon = icon("list"),
+        color = "purple"
+      )
+    })
+    
+    
+    output$orderNum <- renderUI({
+      freq <- var()
+      prettyNum(count(freq), big.mark=",")
+    })
+    
     #Sentiment analysis data
     feel <- reactive({
         text_df <- suj()
@@ -83,7 +106,7 @@ server <- function(input, output, session) {
     
     #Sentiment analysis afinn data
     emotion_score <- reactive({
-      
+    
       text_df <- suj()
       tidytext = text_df %>% unnest_tokens(word, as.numeric(input$selectVar2)) %>% select(line,word)
       test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','tres','d\'un','qu\'il','nc','avoir','afin','ans'))

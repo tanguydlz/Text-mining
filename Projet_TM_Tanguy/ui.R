@@ -17,13 +17,17 @@ library(fmsb)
 library(syuzhet)
 library(shiny)
 library(shinyWidgets)
+library(shinydashboard)
+
 
 
 #####################################################################################################
 #Ajouter le chargement des fichiers ici également car les pickerInput et Slider de l'onglet comparison 
 #prend leur valeur directement des variables
 #####################################################################################################
-setwd("D:/Téléchargements/M2/Text mining")
+#setwd("D:/Téléchargements/M2/Text mining")
+setwd("/Users/hoangkhanhle/Desktop/School/Master 2/Text Mining/Projet/Projet_TM_Tanguy")
+
 
 df<-read.xlsx2("BDD_CEDA_dec_2020_complete - ANONYME.xlsx", sheetIndex = 1,header = TRUE)
 X<-data.frame(df$Préoccupations,df$Motif.de.consult,df$Diagnostic.,df$jeux.et.activités,df$Sommeil,
@@ -44,6 +48,7 @@ X[,18] = replace(as.numeric(X[,18]), is.na(as.numeric(X[,18])),0)
 
 ui <- fluidPage(
     titlePanel("Projet Text Mining"),
+    
     
     sidebarLayout(
         
@@ -190,10 +195,25 @@ ui <- fluidPage(
         
 
 
-
-        
+     
         #conditional main panel
         mainPanel(
+            
+            headerPanel(
+                fluidPage(
+                    setBackgroundColor(color = "ghostwhite"),
+                    useShinydashboard(),
+                    fluidRow(
+                        # Nombre d'observation 
+                        valueBoxOutput("progressBox"),
+                        # Proportion des patients TSA 
+                        valueBoxOutput("approvalBox"),
+                        valueBox(
+                            uiOutput("orderNum"), "Nombre de mots ", icon = icon("book"),width=4,color = "green"
+                        )
+                    ))
+            )
+            ,
             tabsetPanel(
                 tabPanel("Word Plots", plotOutput("freqPlot"), wordcloud2Output("wordPlot"), value = 1,  
                          conditionalPanel(condition="input.tabselected==1")),
