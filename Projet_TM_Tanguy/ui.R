@@ -14,6 +14,7 @@ library(ggraph)
 library(widyr)
 library(stringr)
 library(fmsb)
+library(syuzhet)
 library(shiny)
 library(shinyWidgets)
 

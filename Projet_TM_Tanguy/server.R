@@ -11,7 +11,7 @@ server <- function(input, output, session) {
                   df$Marche..mois., df$Place.dans.la.fratrie,df$X1ers.mots)
     
     load(file="FEEL_lex.Rdata")
-    
+    load(file="afinn.Rdata")
     
     #nettoyage des données
     for(i in 1:13){
@@ -80,6 +80,33 @@ server <- function(input, output, session) {
         test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','tres','d\'un','qu\'il','nc','avoir','afin','ans'))
         test_feel_df <- inner_join(test_clean_df, FEEL_lex, by = 'word')
     })
+    
+    #Sentiment analysis afinn data
+    emotion_score <- reactive({
+      
+      text_df <- suj()
+      tidytext = text_df %>% unnest_tokens(word, as.numeric(input$selectVar2)) %>% select(line,word)
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','tres','d\'un','qu\'il','nc','avoir','afin','ans'))
+      
+      nrc<- get_nrc_sentiment(test_clean_df$word,language="french", lowercase=TRUE)
+      
+      test_feel_df1<-as.data.frame(t(colSums(nrc[,1:8])))
+      test_feel_df1 <- rbind(rep(max(test_feel_df1),8) , rep(0,8) , test_feel_df1)
+      colnames(test_feel_df1)<-c("anger","anticipation","disgust","fear","joy","sadness","surprise","confidence")
+      
+      test_feel_df1
+    })
+    
+    
+    afinn_score <- reactive({
+      
+      text_df <- suj()
+      tidytext = text_df %>% unnest_tokens(word, as.numeric(input$selectVar2)) %>% select(line,word)
+      test_clean_df <- tidytext %>% filter(!word %in% c(stopwords('french'),'a','tres','d\'un','qu\'il','nc','avoir','afin','ans'))
+      afinn_df <- inner_join(test_clean_df, afinn, by = 'word')
+    })
+    
+    
     
     #bigram visualization data
     ngram <- reactive({
@@ -348,48 +375,84 @@ server <- function(input, output, session) {
         })
         
         output$radarChartSentiment <- renderPlot({
-          if(input$radioSentiment==2){
-            test_feel_df <- feel()
-            par(mar = rep(0, 4))
+          
+          if(input$radioSentiment==1){
             
-            test_feel_df = as.data.frame(test_feel_df)
-            test_feel_df[,11] = NA
-            for(i in 1:nrow(test_feel_df)){
-              for(j in 5:10){
-                if (test_feel_df[i,j]==1){
-                  test_feel_df[i,11] = colnames(test_feel_df)[j]
-                }
-              }
-            }
+            afinn_df <- afinn_score()
+            #Compte le nombre d'occurence et son sentiment (négatif ou positif)
+            occur_sentiment = afinn_df %>%
+              count(word,score,sort=TRUE)
             
+            occur_sentiment%>%
+              mutate(contribution = n * score) %>%
+              arrange(desc(abs(contribution))) %>%
+              head(input$numWords2) %>%
+              mutate(word = reorder(word, contribution)) %>%
+              ggplot(aes(word, contribution, fill = contribution > 0)) +
+              geom_col(show.legend = FALSE) +
+              xlab("Les n mots les plus contributifs au sentiment") +
+              ylab("Sentiment score * nombre d'occurrences")+
+              coord_flip()
+          }
+          else if (input$radioSentiment==2){
             
-            colnames(test_feel_df)[11]="sentiment"
-            test_feel_df2 = test_feel_df %>%
-              count(word, sentiment, sort = TRUE) %>%
-              filter(!is.na(sentiment)) %>% select(sentiment,n)
-            test_feel_df2 = aggregate(test_feel_df2$n, list(test_feel_df2$sentiment), FUN="sum")
-            test_feel_df2 = t(test_feel_df2)
-            colnames(test_feel_df2) = test_feel_df2[1,]
-            test_feel_df2[1,] = as.numeric(max(test_feel_df2[2,])) + 5
-            test_feel_df2 = rbind(test_feel_df2,test_feel_df2[2,])
-            test_feel_df2[2,] = 0
-            test_feel_df2 = apply(test_feel_df2,2, as.numeric)
-            test_feel_df2 = as.data.frame(test_feel_df2)
-            
-            radarchart(test_feel_df2  , axistype=1 , 
+            test_feel_df1 <- emotion_score()
+            radarchart( test_feel_df1  , axistype=1 , 
                         
-                       #custom polygon
-                       pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
-                       
-                       #custom the grid
-                       cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,max(test_feel_df2[,3]),20), cglwd=0.8,
-                       
-                       #custom labels
-                       vlcex=0.8 
-            )
+                        #custom polygon
+                        pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+                        
+                        #custom the grid
+                        cglcol="grey", cglty=1, axislabcol="grey", caxislabels=seq(0,300,50), cglwd=0.8,
+                        
+                        #custom labels
+                        vlcex=0.8)
           }
         })
         
+        # output$radarChartSentiment <- renderPlot({
+        #   if(input$radioSentiment==2){
+        #     test_feel_df <- feel()
+        #     par(mar = rep(0, 4))
+        #     
+        #     test_feel_df = as.data.frame(test_feel_df)
+        #     test_feel_df[,11] = NA
+        #     for(i in 1:nrow(test_feel_df)){
+        #       for(j in 5:10){
+        #         if (test_feel_df[i,j]==1){
+        #           test_feel_df[i,11] = colnames(test_feel_df)[j]
+        #         }
+        #       }
+        #     }
+        #     
+        #     
+        #     colnames(test_feel_df)[11]="sentiment"
+        #     test_feel_df2 = test_feel_df %>%
+        #       count(word, sentiment, sort = TRUE) %>%
+        #       filter(!is.na(sentiment)) %>% select(sentiment,n)
+        #     test_feel_df2 = aggregate(test_feel_df2$n, list(test_feel_df2$sentiment), FUN="sum")
+        #     test_feel_df2 = t(test_feel_df2)
+        #     colnames(test_feel_df2) = test_feel_df2[1,]
+        #     test_feel_df2[1,] = as.numeric(max(test_feel_df2[2,])) + 5
+        #     test_feel_df2 = rbind(test_feel_df2,test_feel_df2[2,])
+        #     test_feel_df2[2,] = 0
+        #     test_feel_df2 = apply(test_feel_df2,2, as.numeric)
+        #     test_feel_df2 = as.data.frame(test_feel_df2)
+        #     
+        #     radarchart(test_feel_df2  , axistype=1 , 
+        #                 
+        #                #custom polygon
+        #                pcol=rgb(0.2,0.5,0.5,0.9) , pfcol=rgb(0.2,0.5,0.5,0.5) , plwd=4 , 
+        #                
+        #                #custom the grid
+        #                cglcol="blue", cglty=1, axislabcol="red", caxislabels=seq(0,max(test_feel_df2[,3]),20), cglwd=0.8,
+        #                
+        #                #custom labels
+        #                vlcex=0.8 
+        #     )
+        #   }
+        # })
+        # 
         
         
         
